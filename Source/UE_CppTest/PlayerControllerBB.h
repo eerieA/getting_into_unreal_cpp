@@ -70,6 +70,12 @@ private:
   float CurrentStamina = MaxStamina;
   float StaminaRecuperationFactor = 1.0f;
   
+  // Psi Power
+  static constexpr float MaxPsiPower = 1000.0f;
+  static constexpr float PsiRechargeRate = 1.0f;
+  static constexpr float PsiBlastCost = 150.0f;
+  float CurrentPsiPower = MaxPsiPower;
+  
   // Used to store a reference to the InputComponent cast to an Enhanced Inputcomponent
   UPROPERTY()
   UEnhancedInputComponent* EnhancedInputComponent = nullptr;
