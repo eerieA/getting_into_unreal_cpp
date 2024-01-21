@@ -1,5 +1,17 @@
-# Ignore all files and folders except some
-*
-!.gitignore
+# Ignore all files except git related
+.idea
+.vs
+.vsconfig
+UE_CppTest.sln
+UE_CppTest.uproject
+
+# Ignore all folders except some under /Content/, and except /Source/
+/Binaries/
+/Config/
+/Content/*
 !/Content/Core/
-!/Source/
+!/Content/Input/
+!/Content/Maps/
+/DerivedDataCache/
+/Intermediate/
+/Saved/
