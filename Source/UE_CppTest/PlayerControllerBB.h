@@ -45,7 +45,7 @@ public:
   // The Input Mapping Context to use
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Player Input|Character Movement")
   TObjectPtr<UInputMappingContext> InputMappingContext = nullptr;
-
+  
 protected:
   virtual void OnPossess(APawn *aPawn) override;
   virtual void OnUnPossess() override;
@@ -57,24 +57,6 @@ protected:
   void HandleToggleCrouch();
 
 private:
-  // Health
-  static constexpr int BaseStatValue = 100;
-  int MaxHealth = BaseStatValue;
-  int CurrentHealth = BaseStatValue;
-
-  // Stamina
-  static constexpr float MaxStamina = 100.0f;
-  static constexpr float JumpStaminaCost = 25.0f;
-  static constexpr float RunStaminaCost = 5.0f;
-  static constexpr float RestStaminaRebate = 4.0f;
-  float CurrentStamina = MaxStamina;
-  float StaminaRecuperationFactor = 1.0f;
-  
-  // Psi Power
-  static constexpr float MaxPsiPower = 1000.0f;
-  static constexpr float PsiRechargeRate = 1.0f;
-  static constexpr float PsiBlastCost = 150.0f;
-  float CurrentPsiPower = MaxPsiPower;
   
   // Used to store a reference to the InputComponent cast to an Enhanced Inputcomponent
   UPROPERTY()
