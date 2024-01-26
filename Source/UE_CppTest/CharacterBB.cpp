@@ -2,6 +2,7 @@
 
 #include "CharacterBB.h"
 
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PawnMovementComponent.h"
 
 // Sets default values
@@ -9,6 +10,34 @@ ACharacterBB::ACharacterBB() {
   // Set this character to call Tick() every frame.  You can turn this off to
   // improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
+  SetActorTickInterval(0.5f);
+  SetActorTickEnabled(true);
+}
+void ACharacterBB::AddMovementInput(FVector WorldDirection, float ScaleValue,
+                                    bool bForce) {
+  // If the player is running, check that they have stamina available,
+  // other wise kick them out of running mode
+  if (bIsRunning && CurrentStamina <= 0) {
+    SetRunning(false);
+  }
+
+  Super::AddMovementInput(WorldDirection, ScaleValue, bForce);
+
+  // Set the flag to indicate if the character ran
+  if (bIsRunning)
+    bHasRan = true;
+}
+void ACharacterBB::Jump() {
+  // Jump requires stamina
+  if (CurrentStamina - JumpStaminaCost >= 0.f) {
+    UnCrouch();
+    Super::Jump();
+    bHasJumped = true;
+  }
+}
+void ACharacterBB::Crouch(bool bClientSimulation) {
+  SetRunning(false);
+  Super::Crouch(bClientSimulation);
 }
 
 // Called when the game starts or when spawned
@@ -22,12 +51,75 @@ void ACharacterBB::BeginPlay() {
 }
 
 // Called every frame
-void ACharacterBB::Tick(float DeltaTime) { Super::Tick(DeltaTime); }
+void ACharacterBB::Tick(float DeltaTime) {
+  Super::Tick(DeltaTime);
+
+  // There are 2 things which can recover over time:
+  //    - Stamina
+  //    - Psi Power
+
+#pragma region Update Stamina
+  // Stamina affected, from the worst to best case:
+  // if they jumped, otherwise if they ran, otherwise if they rested.
+  // and if they did none of those they get the default recharge rate.
+
+  float ActualStaminaRecuperationFactor = StaminaRecuperationFactor;
+
+  if (bHasJumped) ActualStaminaRecuperationFactor = -JumpStaminaCost;
+  else if (bHasRan) ActualStaminaRecuperationFactor = -RunStaminaCost;
+  if (bIsCrouched) ActualStaminaRecuperationFactor = RestStaminaRebate;
+
+  // Keep track of the value before it is changed
+  const float PreviousStamina = CurrentStamina;
+
+  // Update the current value, capping it to the min and max allowable
+  CurrentStamina = FMath::Clamp(CurrentStamina + ActualStaminaRecuperationFactor, 0.f, MaxStamina);
+
+  // If the value has actually changed, we need to notify any listeners
+  if (CurrentStamina != PreviousStamina) {
+    OnStaminaChanged.Broadcast(PreviousStamina, CurrentStamina, MaxStamina);
+  }
+
+  // Rest the flags indicating physical exertion
+  bHasRan = false;
+  bHasJumped = false;
+#pragma endregion
+
+#pragma region Update Psi Power
+  // Nothing here needed to deduct from the current value
+  // only restore it, and at a constant rate
+  
+  if (CurrentPsiPower != MaxPsiPower) {
+    // Keep track of the value before
+    const float PreviousPsiPower = CurrentPsiPower;
+
+    CurrentPsiPower = FMath::Clamp(CurrentPsiPower+PsiRechargeRate, 0, MaxPsiPower);
+    OnPsiPowerChanged.Broadcast(PreviousPsiPower, CurrentPsiPower, MaxPsiPower);
+  }
+#pragma endregion
+
+  // Temp display debug information
+  GEngine->AddOnScreenDebugMessage(-1, 0.49f, FColor::Silver,
+  *(FString::Printf(TEXT("Movement - IsCrouched:%d | IsSprinting:%d"),bIsCrouched, bIsRunning)));
+  GEngine->AddOnScreenDebugMessage(-1, 0.49f, FColor::Red,
+  *(FString::Printf(TEXT("Health - Current:%d | Maximum:%d"),CurrentHealth, MaxHealth)));
+  GEngine->AddOnScreenDebugMessage(-1, 0.49f, FColor::Green,
+  *(FString::Printf(TEXT("Stamina - Current:%f | Maximum:%f"),CurrentStamina, MaxStamina)));
+  GEngine->AddOnScreenDebugMessage(-1, 0.49f, FColor::Cyan,
+  *(FString::Printf(TEXT("PsiPower - Current:%f | Maximum:%f"),CurrentPsiPower, MaxPsiPower)));
+  GEngine->AddOnScreenDebugMessage(-1, 0.49f, FColor::Orange,
+    *(FString::Printf(TEXT("Keys - %d keys currently held"),KeyWallet.Num())));
+}
 
 // Called to bind functionality to input
 void ACharacterBB::SetupPlayerInputComponent(
     UInputComponent *PlayerInputComponent) {
   Super::SetupPlayerInputComponent(PlayerInputComponent);
+}
+void ACharacterBB::SetRunning(bool IsRunning) {
+  bIsRunning = IsRunning;
+
+  GetCharacterMovement()->MaxWalkSpeed = bIsRunning ? RunningMaxWalkSpeed : NormalMaxWalkSpeed;
 }
 
 int ACharacterBB::GetHealth() { return CurrentHealth; }
@@ -35,15 +127,29 @@ int ACharacterBB::GetHealth() { return CurrentHealth; }
 int ACharacterBB::GetMaxHealth() { return MaxHealth;}
 
 void ACharacterBB::UpdateHealth(int DeltaHealth) {
+  // If already dead, their health cannot be modified again
+  // This prevents multiple effects "stacking" and the player becoming
+  // dead and instantly reviving.
+  if (CurrentHealth <= 0.f) { return; }
+  
+  int OldValue = CurrentHealth;
+  
   CurrentHealth += DeltaHealth;
-
+  
   // Make sure the new CurrentHealth is inside an acceptable range
   // In this case it will never be < -1, or > MaxHealth
   CurrentHealth = FMath::Clamp(CurrentHealth, -1.f, MaxHealth);
 
-  if (CurrentHealth <= 0.f) {
-    // TODO: Something when the player dies
+  if (CurrentHealth != OldValue) {
+    OnHealthChanged.Broadcast(OldValue, CurrentHealth, MaxHealth);
   }
+
+  // Did the player just die?
+  if (CurrentHealth <= 0.f) {
+    // Player is dead! Do something!
+    OnPlayerDied.Broadcast();
+  }
+  
 }
 
 void ACharacterBB::RestoreToFullHealth() {
@@ -96,3 +202,4 @@ void ACharacterBB::RemoveKey(FString KeyToRemove) {
 bool ACharacterBB::IsPlayerCarryingKey(FString DesiredKey) {
   return KeyWallet.Contains(DesiredKey);
 }
+

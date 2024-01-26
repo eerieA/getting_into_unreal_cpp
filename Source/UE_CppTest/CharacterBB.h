@@ -6,13 +6,28 @@
 #include "GameFramework/Character.h"
 #include "CharacterBB.generated.h"
 
+// Different actions involving the key wallet
+UENUM(BlueprintType)
+enum class EPlayerKeyAction: uint8 {
+  AddKey UMETA(Tooltip="Attempt to add a key to player's wallet."),
+  RemoveKey UMETA(Tooltip="Attempt to remove a key from player's wallet."),
+  TestKey UMETA(Tooltip="Check if the player has a specific key.")
+};
+
 UCLASS()
 class UE_CPPTEST_API ACharacterBB : public ACharacter {
-  GENERATED_BODY()
 
 public:
   // Sets default values for this character's properties
   ACharacterBB();
+  
+  
+  virtual void AddMovementInput(FVector WorldDirection, float ScaleValue,
+                                bool bForce=false) override;
+  
+  virtual void Jump() override;
+  
+  virtual void Crouch(bool bClientSimulation=false) override;
   
   // Called every frame
   virtual void Tick(float DeltaTime) override;
@@ -21,6 +36,23 @@ public:
   virtual void SetupPlayerInputComponent(
       class UInputComponent *PlayerInputComponent) override;
 
+  void SetRunning(bool IsRunning);
+
+  // Running speeds
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player|Movement", meta=(AllowPrivateAccess="true"))
+  float NormalMaxWalkSpeed = 400.0f;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Player|Movement", meta=(AllowPrivateAccess="true"))
+  float RunningMaxWalkSpeed = 1500.0f;
+  
+  // is the character currently set to sprint?
+  bool bIsRunning = false;
+  
+  // did the character sprint since last update?
+  bool bHasRan = false;
+  
+  // did the character jump since last update?
+  bool bHasJumped = false;
+  
   // Return the player's current health
   UFUNCTION(BlueprintPure, Category="Player|Health")
   int GetHealth();
@@ -73,7 +105,52 @@ public:
   // Return true if they do, false if they do not
   UFUNCTION(BlueprintPure, Category="Player|KeyWallet")
   bool IsPlayerCarryingKey(FString DesiredKey);
+
+  // Delegate for when stats based on integers are changed
+  DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FIntStatUpdated,
+    int32, OldValue,
+    int32, NewValue,
+    int32, MaxValue);
+
+  // Delegate for when the player dies
+  DECLARE_DYNAMIC_MULTICAST_DELEGATE(FPlayerIsDead);
   
+  // Delegate for when stats based on floats are changed
+  DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FFloatStatUpdated,
+    float, OldValue,
+    float, NewValue,
+    float, MaxValue);
+
+  // Delegate for when actions occur with player's keys
+  // KeyString is the key involved in the action
+  // KeyAction shows what was attempted
+  // IsSuccess shows if the attempted action happened or not
+  DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FKeyWalletAction,
+    FString, KeyString,
+    EPlayerKeyAction, KeyAction,
+    bool, isSuccess);
+
+  // Triggered when the player's health is updated
+  UPROPERTY(BlueprintAssignable, Category="Player|Health")
+  FIntStatUpdated OnHealthChanged;
+
+  // Triggered when the player's dies
+  UPROPERTY(BlueprintAssignable, Category="Player|Health")
+  FPlayerIsDead OnPlayerDied;
+  
+  // Triggered when the player's stamina is updated
+  UPROPERTY(BlueprintAssignable, Category = "Player|Stamina")
+  FIntStatUpdated OnStaminaChanged;
+  
+  // Triggered when the player's psi power is updated
+  UPROPERTY(BlueprintAssignable, Category = "Player|PsiPower")
+  FFloatStatUpdated OnPsiPowerChanged;
+
+  // Triggered when something happens with the player's key wallet
+  UPROPERTY(BlueprintAssignable, Category = "Player|PsiPower")
+  FKeyWalletAction OnKeyWalletAction;
+
+
 protected:
   // Called when the game starts or when spawned
   virtual void BeginPlay() override;
@@ -101,4 +178,6 @@ private:
   
   // Player Keys
   TArray<FString> KeyWallet;
+
+  GENERATED_BODY()
 };

@@ -87,7 +87,17 @@ void APlayerControllerBBBase::HandleJump() {
   }
 }
 void APlayerControllerBBBase::HandlePsiBlast() {}
-void APlayerControllerBBBase::HandleToggleSprint() {}
+
+void APlayerControllerBBBase::HandleToggleSprint() {
+  // Input is Digital (value not used here)
+
+  // Make the Player's Character Pawn sprint, if not already sprinting
+  if (PlayerCharacter && PlayerCharacter->bIsRunning) {
+    PlayerCharacter->SetRunning(false);
+  } else {
+    PlayerCharacter->SetRunning(true);
+  }
+}
 
 void APlayerControllerBBBase::HandleToggleCrouch() {
   // Input is Digital (value not used here)
