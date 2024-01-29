@@ -86,7 +86,11 @@ void APlayerControllerBBBase::HandleJump() {
     PlayerCharacter->Jump();
   }
 }
-void APlayerControllerBBBase::HandlePsiBlast() {}
+void APlayerControllerBBBase::HandlePsiBlast() {
+  if (PlayerCharacter) {
+    PlayerCharacter->PsiBlast();
+  }
+}
 
 void APlayerControllerBBBase::HandleToggleSprint() {
   // Input is Digital (value not used here)
