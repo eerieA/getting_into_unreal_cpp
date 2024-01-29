@@ -187,19 +187,28 @@ void ACharacterBB::PsiBlast() {
 void ACharacterBB::AddKey(FString KeyToAdd) {
   if (KeyWallet.Contains(KeyToAdd)) {
     // Key already in there, play a noise
+    OnKeyWalletAction.Broadcast(KeyToAdd, EPlayerKeyAction::AddKey, false);
   } else {
     KeyWallet.Add(KeyToAdd);
     // And maybe play a sound effect?
+    OnKeyWalletAction.Broadcast(KeyToAdd, EPlayerKeyAction::AddKey, true);
   }
 }
 
 void ACharacterBB::RemoveKey(FString KeyToRemove) {
   if (KeyWallet.Contains(KeyToRemove)) {
     KeyWallet.Remove(KeyToRemove);
+    OnKeyWalletAction.Broadcast(KeyToRemove, EPlayerKeyAction::RemoveKey, true);
+  } else {
+    OnKeyWalletAction.Broadcast(KeyToRemove, EPlayerKeyAction::RemoveKey, true);
   }
 }
 
 bool ACharacterBB::IsPlayerCarryingKey(FString DesiredKey) {
-  return KeyWallet.Contains(DesiredKey);
+  bool Result = KeyWallet.Contains(DesiredKey);
+  
+  OnKeyWalletAction.Broadcast(DesiredKey, EPlayerKeyAction::TestKey, Result);
+  
+  return Result;
 }
 
