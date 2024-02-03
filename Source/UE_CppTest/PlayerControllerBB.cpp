@@ -13,6 +13,9 @@ void APlayerControllerBBBase::OnPossess(APawn *aPawn) {
   PlayerCharacter = Cast<ACharacterBB>(aPawn);
   checkf(PlayerCharacter, TEXT("APlayerControllerBBBase derived classes should only posess ACharacterBBBase derived pawns."));
 
+  // Store a reference to the HUD
+  PlayerHud = Cast<AHudBB>(GetHUD());
+  checkf(PlayerHud, TEXT("Unable to get reference to the HUD"));
   
   // Get a reference to the EnhancedInputcomponent
   EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent);
@@ -46,6 +49,9 @@ void APlayerControllerBBBase::OnPossess(APawn *aPawn) {
   
   if (ActionToggleSprint)
     EnhancedInputComponent->BindAction(ActionToggleSprint, ETriggerEvent::Triggered, this, &APlayerControllerBBBase::HandleToggleSprint);
+  
+  if (ActionCycleUIMode)
+    EnhancedInputComponent->BindAction(ActionCycleUIMode, ETriggerEvent::Triggered, this, &APlayerControllerBBBase::HandleCycleUIMode);
   
 }
 void APlayerControllerBBBase::OnUnPossess() {
@@ -111,5 +117,11 @@ void APlayerControllerBBBase::HandleToggleCrouch() {
     PlayerCharacter->UnCrouch();
   } else {
     PlayerCharacter->Crouch();
+  }
+}
+
+void APlayerControllerBBBase::HandleCycleUIMode() {
+  if (PlayerHud) {
+    PlayerHud->CycleToNextViewMode();
   }
 }

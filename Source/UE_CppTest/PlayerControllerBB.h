@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "HudBB.h"
 #include "InputActionValue.h"
 #include "PlayerControllerBB.generated.h"
 
@@ -42,6 +43,10 @@ public:
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Player Input|Character Movement")
   TObjectPtr<UInputAction> ActionPsiBlast = nullptr;
   
+  // The Input Action to map to cycle UI viewmode
+  UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Player Input|UI")
+  TObjectPtr<UInputAction> ActionCycleUIMode = nullptr;
+  
   // The Input Mapping Context to use
   UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Player Input|Character Movement")
   TObjectPtr<UInputMappingContext> InputMappingContext = nullptr;
@@ -55,16 +60,21 @@ protected:
   void HandlePsiBlast();
   void HandleToggleSprint();
   void HandleToggleCrouch();
+  void HandleCycleUIMode();
 
 private:
   
   // Used to store a reference to the InputComponent cast to an Enhanced Inputcomponent
   UPROPERTY()
-  UEnhancedInputComponent* EnhancedInputComponent = nullptr;
+  TObjectPtr<UEnhancedInputComponent> EnhancedInputComponent = nullptr;
   
   // Used to store a reference to the pawn we are controlling
   UPROPERTY()
-  ACharacterBB* PlayerCharacter = nullptr;
+  TObjectPtr<ACharacterBB> PlayerCharacter = nullptr;
+  
+  // Used to store a reference to the pawn we are controlling
+  UPROPERTY()
+  TObjectPtr<AHudBB> PlayerHud = nullptr;
   
   GENERATED_BODY()
 };
