@@ -67,13 +67,13 @@ void UStatBarBase::ProcessCurrentValueText() {
 
 void UStatBarBase::UpdateWidget() {
   // Check that the controls we want actually exist
-  if (!PercentBar_Filled || !PercentBar_Empty) return;
+  if (!PercentBar_Filled || !PercentBar_Empty || !MainBorder || !IconImage) return;
 
   FSlateChildSize EmptySize = FSlateChildSize(ESlateSizeRule::Fill);
   EmptySize.Value = 1.f - CurrentPercentage;
   
   FSlateChildSize FilledSize = FSlateChildSize(ESlateSizeRule::Fill);
-  EmptySize.Value = CurrentPercentage;
+  FilledSize.Value = CurrentPercentage;
 
   if (UVerticalBoxSlot* FilledSlot = Cast<UVerticalBoxSlot>(PercentBar_Filled->Slot)) {
     FilledSlot->SetSize(FilledSize);

@@ -76,6 +76,12 @@ public:
   // did the character jump since last update?
   bool bHasJumped = false;
   
+  // Called whenever something needs the latest stat values re-broadcast from the
+  // character, instead of waiting for something to cause an update via a change.
+  // (Most commonly used when switching UI elements)
+  UFUNCTION(BlueprintCallable,Category="Player|Stats")
+  void BroadcastCurrentStats();
+  
 #pragma region Health
   // Return the player's current health
   UFUNCTION(BlueprintPure, Category="Player|Health")
@@ -122,7 +128,7 @@ public:
   
   // Triggered when the player's stamina is updated
   UPROPERTY(BlueprintAssignable, Category = "Player|Stamina")
-  FIntStatUpdated OnStaminaChanged;
+  FFloatStatUpdated OnStaminaChanged;
   
 #pragma endregion
 

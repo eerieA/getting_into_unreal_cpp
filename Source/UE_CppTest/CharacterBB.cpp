@@ -11,8 +11,18 @@ ACharacterBB::ACharacterBB() {
   // improve performance if you don't need it.
   PrimaryActorTick.bCanEverTick = true;
   SetActorTickInterval(0.5f);
-  SetActorTickEnabled(true);
+  AActor::SetActorTickEnabled(true);
 }
+
+// Called when the game starts or when spawned
+void ACharacterBB::BeginPlay()
+{
+  Super::BeginPlay();
+  if (GetMovementComponent()) GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
+
+  BroadcastCurrentStats();
+}
+
 void ACharacterBB::AddMovementInput(FVector WorldDirection, float ScaleValue,
                                     bool bForce) {
   // If the player is running, check that they have stamina available,
@@ -38,16 +48,6 @@ void ACharacterBB::Jump() {
 void ACharacterBB::Crouch(bool bClientSimulation) {
   SetRunning(false);
   Super::Crouch(bClientSimulation);
-}
-
-// Called when the game starts or when spawned
-void ACharacterBB::BeginPlay() {
-  Super::BeginPlay();
-  
-  // Set the character as can crouch in the NavAgent; otherwise it can not crouch
-  if (GetMovementComponent()) {
-    GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
-  }
 }
 
 // Called every frame
@@ -120,6 +120,24 @@ void ACharacterBB::SetRunning(bool IsRunning) {
   bIsRunning = IsRunning;
 
   GetCharacterMovement()->MaxWalkSpeed = bIsRunning ? RunningMaxWalkSpeed : NormalMaxWalkSpeed;
+}
+
+void ACharacterBB::BroadcastCurrentStats()
+{
+  OnHealthChanged.Broadcast(CurrentHealth, CurrentHealth, MaxHealth);
+  OnStaminaChanged.Broadcast(CurrentStamina, CurrentStamina, MaxStamina);
+  OnPsiPowerChanged.Broadcast(CurrentPsiPower, CurrentPsiPower, MaxPsiPower);
+
+  // Make a string of all the keys
+  // If there are ANY members, the string will end with a trailing comma ','
+  // We dont care to remove that here, it doesnt matter.
+  FString AllKeys = FString();
+  for (FString Key : KeyWallet)
+  {
+    AllKeys.Appendf(TEXT("%s,"), &Key);
+  }
+
+  //OnKeyWalletAction.Broadcast(AllKeys, EPlayerKeyAction::CountKeys, true);
 }
 
 int ACharacterBB::GetHealth() { return CurrentHealth; }
